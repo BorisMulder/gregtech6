@@ -19,7 +19,6 @@
 
 package gregtech.tileentity.energy.reactors;
 
-import gregapi.data.FL;
 import gregapi.data.LH;
 import gregapi.data.MT;
 import gregapi.render.BlockTextureDefault;
@@ -81,122 +80,39 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 		aList.add(LH.Chat.CYAN + "A greater " + LH.Chat.YELLOW +  "Factor" + LH.Chat.CYAN + " means the Rod emits more extra Neutrons for the amount of Neutrons on it");
 		if (mModerated || oModerated) aList.add(LH.Chat.DBLUE + "This Fuel is " + LH.Chat.WHITE + "Moderated");
 		aList.add(LH.Chat.CYAN + "Remaining: " + LH.Chat.WHITE + (mDurability / 120000) + LH.Chat.CYAN + " Minutes");
-		switch ((int) ((CLIENT_TIME / 100) % 10)) {
-			case 0:
-				aList.add(LH.Chat.CYAN + "When used with Distilled or Semiheavy Water:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				aList.add(LH.Chat.GREEN + "Fuel rods will be " + LH.Chat.WHITE + "Moderated");
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 1:
-				aList.add(LH.Chat.CYAN + "When used with Heavy Water:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + UT.Code.divup(mNeutronMax, 8) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				aList.add(LH.Chat.GREEN + "Fuel rods will be " + LH.Chat.WHITE + "Moderated");
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 2:
-				aList.add(LH.Chat.CYAN + "When used with Tritiated Water:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + UT.Code.divup(mNeutronMax, 16) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				aList.add(LH.Chat.GREEN + "Fuel rods will be " + LH.Chat.WHITE + "Moderated");
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 3:
-				aList.add(LH.Chat.CYAN + "When used with molten Tin:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + (mNeutronDiv - 1));
-				aList.add(LH.Chat.GREEN + "1/3 the Heat per Neutron");
-				if (mNeutronDiv <= 5) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 4:
-				aList.add(LH.Chat.CYAN + "When used with molten Sodium:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + (mNeutronDiv - 1));
-				aList.add(LH.Chat.GREEN + "1/6 the Heat per Neutron");
-				if (mNeutronDiv <= 5) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 5:
-				aList.add(LH.Chat.CYAN + "When used with Industrial Coolant:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther * 4 + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf * 4 + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv * 2);
-				if (mNeutronDiv <= 2) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 6:
-				aList.add(LH.Chat.CYAN + "When used with Molten Lithium Chloride:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + (mNeutronOther - UT.Code.divup(mNeutronOther, 2)) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + (mNeutronSelf * 5) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + (mNeutronMax + UT.Code.divup(mNeutronMax, 4)) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 7:
-				aList.add(LH.Chat.CYAN + "When used with Molten Thorium Salt:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + (mNeutronOther - UT.Code.divup(mNeutronOther, 2)) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + (mNeutronSelf * 0) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + (mNeutronMax * 4) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + (mNeutronDiv - 1));
-				if (mNeutronDiv <= 5) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 8:
-				aList.add(LH.Chat.CYAN + "When used with Carbon Dioxide:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + mNeutronOther + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf * 3 + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
-			case 9:
-				aList.add(LH.Chat.CYAN + "When used with Helium:");
-				aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + (mNeutronOther - UT.Code.divup(mNeutronOther, 2)) + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + mNeutronSelf + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + mNeutronMax + LH.Chat.PURPLE + " Neutrons/t");
-				aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + "1/" + mNeutronDiv);
-				if (mNeutronDiv <= 4) aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
-				break;
+
+		int idx = (int) ((CLIENT_TIME / 100) % ReactorCoolant.COOLANTS.size());
+		ReactorCoolant coolant = ReactorCoolant.COOLANTS.get(idx);
+
+		aList.add(LH.Chat.CYAN + "When used with " + coolant.mCoolant.getLocalizedName() + ": ");
+		aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + coolant.getEmission(mNeutronOther) + LH.Chat.PURPLE + " Neutrons/t");
+		aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + coolant.getSelf(mNeutronSelf) + LH.Chat.PURPLE + " Neutrons/t");
+		aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + coolant.getMax(mNeutronMax) + LH.Chat.PURPLE + " Neutrons/t");
+		aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + ReactorCoolant.getFraction(coolant.getFactor(mNeutronDiv)));
+		if (coolant.mModerates) {
+			aList.add(LH.Chat.GREEN + "Fuel rods will be " + LH.Chat.WHITE + "Moderated");
+		}
+		if (coolant.mHeatDivisor != 1) {
+			aList.add(LH.Chat.GREEN + ReactorCoolant.getFraction(1.0 / coolant.mHeatDivisor) + " the Heat per Neutron");
+		}
+		if (mNeutronDiv <= coolant.mCriticalThreshold) {
+			aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
 		}
 	}
 	
 	@Override
 	// Gets called every 20 Ticks.
 	public int getReactorRodNeutronEmission(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		int tNeutronOther = mNeutronOther;
-		int tNeutronSelf = mNeutronSelf;
-		int tNeutronDiv = mNeutronDiv;
-		if (FL.Coolant_IC2.is(aReactor.mTanks[0])) {
-			tNeutronOther *= 4;
-			tNeutronSelf *= 4;
-			tNeutronDiv *= 2;
-		} else if (MT.CO2.mGas.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			tNeutronSelf *= 3;
-		} else if (MT.He.mGas.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			tNeutronOther -= UT.Code.divup(mNeutronOther, 2);
-		} else if (MT.LiCl.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			tNeutronOther -= UT.Code.divup(mNeutronOther, 2);
-			tNeutronSelf *= 5;
-		} else if (FL.Thorium_Salt.is(aReactor.mTanks[0])) {
-			tNeutronOther -= UT.Code.divup(mNeutronOther, 2);
-			tNeutronSelf = 0;
-			tNeutronDiv -= 1;
-		} else if (MT.Sn.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid()) || MT.Na.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			tNeutronDiv -= 1;
-		}
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
+		if (coolant == null) return 0;
+
+		int tNeutronOther = coolant.getEmission(mNeutronOther);
+		int tNeutronSelf = coolant.getSelf(mNeutronSelf);
+		double tNeutronFactor = coolant.getFactor(mNeutronDiv);
+
 		aReactor.mNeutronCounts[aSlot] += tNeutronSelf;
-		long tEmission = tNeutronOther + UT.Code.divup(Math.max(aReactor.oNeutronCounts[aSlot]-tNeutronSelf, 0), tNeutronDiv);
-		return UT.Code.bindInt(tEmission);
+		double tEmission = tNeutronOther + Math.max(aReactor.oNeutronCounts[aSlot]-tNeutronSelf, 0) * tNeutronFactor;
+		return UT.Code.bindInt((long)Math.ceil(tEmission));
 	}
 	
 	@Override
@@ -205,14 +121,11 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 		aReactor.mEnergy += aReactor.oNeutronCounts[aSlot];
 		int tNeutronMax = getReactorRodNeutronMaximum(aReactor, aSlot, aStack);
 
-		if (FL.distw(aReactor.mTanks[0]) ||
-			MT.HDO.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid()) ||
-			MT.D2O.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid()) ||
-			MT.T2O.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid()))
-		{
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
+		if (coolant != null && coolant.mModerates) {
 			mModerated = oModerated = T;
 		}
-		long tDurabilityLoss = aReactor.oNeutronCounts[aSlot] <= tNeutronMax ? 100 : UT.Code.divup(400 * aReactor.oNeutronCounts[aSlot], tNeutronMax);
+		long tDurabilityLoss = aReactor.oNeutronCounts[aSlot] <= tNeutronMax ? 100 : UT.Code.divup(400L * aReactor.oNeutronCounts[aSlot], tNeutronMax);
 		if (oModerated) tDurabilityLoss *= 4;
 		mDurability = tDurabilityLoss > mDurability ? -1 : mDurability - tDurabilityLoss;
 		UT.NBT.set(aStack, writeItemNBT(aStack.hasTagCompound() ? aStack.getTagCompound() : UT.NBT.make()));
@@ -238,16 +151,11 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 
 	@Override
 	public int getReactorRodNeutronMaximum(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		if (MT.LiCl.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			return mNeutronMax + (int) UT.Code.divup(mNeutronMax, 4);
-		} else if (FL.Thorium_Salt.is(aReactor.mTanks[0])) {
-			return mNeutronMax * 4;
-		} else if (MT.D2O.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			return (int) UT.Code.divup(mNeutronMax, 8);
-		} else if (MT.T2O.mLiquid.isFluidEqual(aReactor.mTanks[0].getFluid())) {
-			return (int) UT.Code.divup(mNeutronMax, 16);
-		} else {
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
+		if (coolant == null) {
 			return mNeutronMax;
+		} else {
+			return coolant.getMax(mNeutronMax);
 		}
 	}
 

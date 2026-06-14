@@ -25,7 +25,6 @@ import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnEntityCollidedWithB
 import gregapi.data.FL;
 import gregapi.data.LH;
 import gregapi.data.LH.Chat;
-import gregapi.data.MT;
 import gregapi.fluid.FluidTankGT;
 import gregapi.item.IItemReactorRod;
 import gregapi.tileentity.ITileEntityFunnelAccessible;
@@ -37,6 +36,7 @@ import gregapi.tileentity.machines.ITileEntitySwitchableOnOff;
 import gregapi.util.ST;
 import gregapi.util.UT;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -60,7 +60,9 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 	public byte mMode = 0;
 	public boolean mRunning = F, mStopped = F;
 	public FluidTankGT[] mTanks = {new FluidTankGT(64000), new FluidTankGT(64000).setCapacity(FL.Steam.mName, 64000L*STEAM_PER_WATER)};
-	
+
+	public abstract int numSlots();
+
 	@Override
 	public void readFromNBT2(NBTTagCompound aNBT) {
 		super.readFromNBT2(aNBT);
@@ -74,7 +76,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 			mNeutronCounts[i] = aNBT.getInteger(NBT_VALUE+".m."+i);
 			oNeutronCounts[i] = aNBT.getInteger(NBT_VALUE+".o."+i);
 		}
-		
+
 		if (worldObj != null && isServerSide() && mHasToAddTimer) {
 			GT_API_Proxy.SERVER_TICK_POST.add(this);
 			GT_API_Proxy.SERVER_TICK_PO2T.add(this);
@@ -141,6 +143,88 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 			if (mTanks[0].check()) updateClientData();
 		}
 	}
+
+	protected abstract void updateAdjacentCores();
+	protected void updateNeutronCounts() {}
+
+	@Override
+	public void onServerTickPost(boolean aFirst) {
+		if (aFirst) {
+			// It is == 19 because the Sensors react to == 0, so this is the realistic fastest a Sensor can display.
+			if (SERVER_TIME % 20 == 19 && !mStopped) {
+				updateAdjacentCores();
+			}
+		} else {
+			if (SERVER_TIME % 20 == 19 && !mStopped) {
+				updateNeutronCounts();
+				for (int i = 0; i < numSlots(); i++) {
+					updateReactorRodModeration(i);
+				}
+			}
+
+			long tCalc = 0;
+			for (int i = 0; i < numSlots(); i++) {
+				tCalc += (oNeutronCounts[i] = mNeutronCounts[i]);
+			}
+			tCalc = UT.Code.divup(tCalc, 256);
+
+			// TODO Raycasting through Lead, Water and similar Blocks.
+			if (tCalc > 0 && SERVER_TIME % 20 == 10) {
+				for (Object tEntity : worldObj.loadedEntityList) if (tEntity instanceof EntityLivingBase) {
+					if (Math.abs(xCoord - ((EntityLivingBase)tEntity).posX) > 200) continue;
+					if (Math.abs(zCoord - ((EntityLivingBase)tEntity).posZ) > 200) continue;
+					int tStrength = UT.Code.bindInt((long)(tCalc - ((EntityLivingBase)tEntity).getDistance(xCoord, yCoord, zCoord)));
+					if (tStrength > 0) UT.Entities.applyRadioactivity((EntityLivingBase)tEntity, (int)UT.Code.divup(tStrength, 10), tStrength);
+				}
+			}
+
+			mRunning = (tCalc != 0);
+
+			long tEnergy = mEnergy;
+
+			for (int i = 0; i < numSlots(); i++) {
+				if (getReactorRodNeutronReaction(i)) {
+					mRunning = T;
+					break;
+				}
+			}
+
+			ReactorCoolant coolant = ReactorCoolant.getCoolant(mTanks[0].getFluid());
+			if (coolant != null) {
+				mEnergy = coolant.getHeat(tEnergy);
+			}
+			oEnergy = mEnergy - tEnergy;
+
+			if (mEnergy > 0) {
+				boolean tIsExploding = F;
+				if (coolant != null) {
+					long litersNeeded = mEnergy / coolant.mHUPerLiter;
+					if (mTanks[0].has(litersNeeded) && mTanks[1].fillAll(FL.mul(coolant.mHeatant, litersNeeded))) {
+						mEnergy -= coolant.mHUPerLiter * mTanks[0].remove(litersNeeded);
+					} else tIsExploding = T;
+				} else if (mTanks[0].isEmpty()) {
+					if (oEnergy > 0) tIsExploding = T;
+				}
+
+				if (tIsExploding && !invempty()) {
+					// TODO proper explosion.
+					// explode(10); // TODO Keep commented out until Reactor System has been tested well enough.
+					for (int i = 0; i < numSlots(); i++) {
+						slotKill(i);
+					}
+					UT.Sounds.send(SFX.MC_EXPLODE, this, F);
+					tCalc *= 2;
+					for (Object tEntity : worldObj.loadedEntityList) if (tEntity instanceof EntityLivingBase) {
+						if (Math.abs(xCoord - ((EntityLivingBase)tEntity).posX) > 500) continue;
+						if (Math.abs(zCoord - ((EntityLivingBase)tEntity).posZ) > 500) continue;
+						int tStrength = UT.Code.bindInt((long)(tCalc - ((EntityLivingBase)tEntity).getDistance(xCoord, yCoord, zCoord)));
+						if (tStrength > 0) UT.Entities.applyRadioactivity((EntityLivingBase)tEntity, (int)UT.Code.divup(tStrength, 10), tStrength);
+					}
+					updateClientData();
+				}
+			}
+		}
+	}
 	
 	@Override
 	public void onCoordinateChange() {
@@ -161,7 +245,11 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 		return false;
 	}
 
-	public void updateReactorRodModeration(int aSlot) {/**/}
+	protected void updateReactorRodModeration(int aSlot) {
+		if (slotHas(aSlot) && ST.item(slot(aSlot)) instanceof IItemReactorRod) {
+			((IItemReactorRod) ST.item(slot(aSlot))).updateModeration(this, aSlot, slot(aSlot));
+		}
+	}
 
 	public int getReactorRodNeutronEmission(int aSlot) {
 		return 0;
@@ -253,18 +341,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 	
 	@Override
 	protected IFluidTank getFluidTankFillable2(byte aSide, FluidStack aFluidToFill) {
-		return FL.Coolant_IC2.is(aFluidToFill)
-			|| FL.distw(aFluidToFill)
-			|| FL.Thorium_Salt.is(aFluidToFill)
-			|| MT.Sn.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.Na.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.HDO.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.D2O.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.T2O.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.LiCl.mLiquid.isFluidEqual(aFluidToFill)
-			|| MT.He.mGas.isFluidEqual(aFluidToFill)
-			|| MT.CO2.mGas.isFluidEqual(aFluidToFill)
-			? mTanks[0] : null;
+		return ReactorCoolant.isCoolant(aFluidToFill) ? mTanks[0] : null;
 	}
 	
 	@Override
@@ -280,18 +357,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 
 	@Override
 	public int funnelFill(byte aSide, FluidStack aFluid, boolean aDoFill) {
-		if (!( FL.Coolant_IC2.is(aFluid)
-			|| FL.distw(aFluid)
-			|| FL.Thorium_Salt.is(aFluid)
-			|| MT.Sn.mLiquid.isFluidEqual(aFluid)
-			|| MT.Na.mLiquid.isFluidEqual(aFluid)
-			|| MT.HDO.mLiquid.isFluidEqual(aFluid)
-			|| MT.D2O.mLiquid.isFluidEqual(aFluid)
-			|| MT.T2O.mLiquid.isFluidEqual(aFluid)
-			|| MT.LiCl.mLiquid.isFluidEqual(aFluid)
-			|| MT.He.mGas.isFluidEqual(aFluid)
-			|| MT.CO2.mGas.isFluidEqual(aFluid)
-			)) return 0;
+		if (!ReactorCoolant.isCoolant(aFluid)) return 0;
 		return mTanks[0].fill(aFluid, aDoFill);
 	}
 	
