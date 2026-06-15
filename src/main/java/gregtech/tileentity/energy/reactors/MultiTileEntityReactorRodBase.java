@@ -44,13 +44,7 @@ import static gregapi.data.CS.*;
 /**
  * @author Gregorius Techneticies
  */
-public class MultiTileEntityReactorRodBase extends TileEntityBase07Paintable implements IItemReactorRod, ITileEntityQuickObstructionCheck, IMTE_AddToolTips, IMTE_SetBlockBoundsBasedOnState, IMTE_GetCollisionBoundingBoxFromPool, IMTE_GetSelectedBoundingBoxFromPool {
-	@Override
-	public void addToolTips(List<String> aList, ItemStack aStack, boolean aF3_H) {
-		aList.add(LH.Chat.DGRAY + "Used in Nuclear Reactor Core");
-		aList.add(LH.Chat.CYAN + "Empty Reactor Rod, transparent to Neutrons.");
-	}
-
+public abstract class MultiTileEntityReactorRodBase extends TileEntityBase07Paintable implements IItemReactorRod, ITileEntityQuickObstructionCheck, IMTE_AddToolTips, IMTE_SetBlockBoundsBasedOnState, IMTE_GetCollisionBoundingBoxFromPool, IMTE_GetSelectedBoundingBoxFromPool {
 	@Override
 	public ITexture getTexture2(Block aBlock, int aRenderPass, byte aSide, boolean[] aShouldSideBeRendered) {
 		return SIDES_HORIZONTAL[aSide] ? getReactorRodTextureSides(null, 0, null, T) : getReactorRodTextureTop(null, 0, null, T);
@@ -85,14 +79,12 @@ public class MultiTileEntityReactorRodBase extends TileEntityBase07Paintable imp
 	@Override public boolean  isModerated(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return false;}
 	@Override public void     updateModeration(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {/**/}
 	@Override public int      getReactorRodNeutronEmission  (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return 0;}
-	@Override public boolean  getReactorRodNeutronReaction  (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return F;}
-	@Override public int      getReactorRodNeutronReflection(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, int aNeutrons, boolean aModerated) {return 0;}
+	@Override public boolean  performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return F;}
+	@Override public int      emitToAndReflectFrom(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, int aNeutrons, boolean aModerated) {return 0;}
 	@Override public int      getReactorRodNeutronMaximum   (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return 0;}
 
 	@Override public ITexture getReactorRodTextureSides(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, boolean aActive) {return BlockTextureMulti.get(BlockTextureDefault.get(sColoreds[1], mRGBa, F), BlockTextureDefault.get(sOverlays[1], aActive ? UNCOLOURED : MT.Pb.fRGBaSolid));}
 	@Override public ITexture getReactorRodTextureTop  (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, boolean aActive) {return BlockTextureMulti.get(BlockTextureDefault.get(sColoreds[0], mRGBa, F), BlockTextureDefault.get(sOverlays[0], aActive ? UNCOLOURED : MT.Pb.fRGBaSolid));}
 
 	@Override public boolean canDrop(int aSlot) {return F;}
-
-	@Override public String getTileEntityName() {return "gt.multitileentity.generator.reactor.rods.empty";}
 }

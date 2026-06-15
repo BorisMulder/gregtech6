@@ -57,18 +57,18 @@ public class ReactorCoolant {
 	}
 
 	public int getSelf(int base) {
-		return (int) ((double)base * this.mSelfMultiplier);
+		return (int) Math.ceil((double)base * this.mSelfMultiplier);
 	}
 
 	public int getMax(int base) {
-		return (int) ((double)base * this.mMaxMultiplier);
+		return (int) Math.ceil((double)base * this.mMaxMultiplier);
 	}
 
 	public double getFactor(int base) {
 		if (this.mFactorMultiplier < 0) {
 			return (1 / ((double)base + this.mFactorMultiplier));
 		}
-		return (1 / (double)base * this.mFactorMultiplier);
+		return (1 / (double)base) * this.mFactorMultiplier;
 	}
 
 	public long getHeat(long base) {
@@ -76,7 +76,7 @@ public class ReactorCoolant {
 		return (long) Math.ceil((double)base / this.mHeatDivisor);
 	}
 
-	public static String getFraction(double n) {
+	public static String fractionToString(double n) {
 		if (n < 1.0) {
 			return "1/" + Math.round(1.0/n);
 		} else {

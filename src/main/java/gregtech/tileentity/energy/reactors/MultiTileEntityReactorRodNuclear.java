@@ -75,7 +75,7 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 	public void addToolTips(List<String> aList, ItemStack aStack, boolean aF3_H) {
 		aList.add(LH.Chat.DGRAY + "Used in Nuclear Reactor Core");
 		aList.add(LH.Chat.CYAN + "The " + LH.Chat.GREEN +  "Emission" + LH.Chat.CYAN + " describes how many Neutrons are emitted to adjacent Rods");
-		aList.add(LH.Chat.CYAN + "The " + LH.Chat.GREEN +  "Self" + LH.Chat.CYAN + " describes how many Neutrons naturally onto this Rod");
+		aList.add(LH.Chat.CYAN + "The " + LH.Chat.GREEN +  "Self" + LH.Chat.CYAN + " describes how many Neutrons are put onto this Rod");
 		aList.add(LH.Chat.CYAN + "The " + LH.Chat.GREEN +  "Maximum" + LH.Chat.CYAN + " describes how many Neutrons can be on this Rod while lasting the advertised duration");
 		aList.add(LH.Chat.CYAN + "A greater " + LH.Chat.YELLOW +  "Factor" + LH.Chat.CYAN + " means the Rod emits more extra Neutrons for the amount of Neutrons on it");
 		if (mModerated || oModerated) aList.add(LH.Chat.DBLUE + "This Fuel is " + LH.Chat.WHITE + "Moderated");
@@ -88,12 +88,12 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 		aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + coolant.getEmission(mNeutronOther) + LH.Chat.PURPLE + " Neutrons/t");
 		aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + coolant.getSelf(mNeutronSelf) + LH.Chat.PURPLE + " Neutrons/t");
 		aList.add(LH.Chat.GREEN + "Maximum: " + LH.Chat.WHITE + coolant.getMax(mNeutronMax) + LH.Chat.PURPLE + " Neutrons/t");
-		aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + ReactorCoolant.getFraction(coolant.getFactor(mNeutronDiv)));
+		aList.add(LH.Chat.YELLOW + "Factor: " + LH.Chat.WHITE + ReactorCoolant.fractionToString(coolant.getFactor(mNeutronDiv)));
 		if (coolant.mModerates) {
 			aList.add(LH.Chat.GREEN + "Fuel rods will be " + LH.Chat.WHITE + "Moderated");
 		}
 		if (coolant.mHeatDivisor != 1) {
-			aList.add(LH.Chat.GREEN + ReactorCoolant.getFraction(1.0 / coolant.mHeatDivisor) + " the Heat per Neutron");
+			aList.add(LH.Chat.GREEN + ReactorCoolant.fractionToString(1.0 / coolant.mHeatDivisor) + " the Heat per Neutron");
 		}
 		if (mNeutronDiv <= coolant.mCriticalThreshold) {
 			aList.add(LH.Chat.RED + "This Fuel is" + LH.Chat.BLINKING_RED + " Critical");
@@ -101,31 +101,31 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 	}
 	
 	@Override
-	// Gets called every 20 Ticks.
+	// Gets called every 20 Ticks. It emits the Self neutrons to its own slot and returns how many neutrons are emitted to neighbouring slots
 	public int getReactorRodNeutronEmission(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
-		if (coolant == null) return 0;
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.inputTank.getFluid());
 
-		int tNeutronOther = coolant.getEmission(mNeutronOther);
-		int tNeutronSelf = coolant.getSelf(mNeutronSelf);
-		double tNeutronFactor = coolant.getFactor(mNeutronDiv);
+		// Without coolant the rod still reacts on its base stats, so the reactor melts down.
+		int tNeutronOther = coolant == null ? mNeutronOther : coolant.getEmission(mNeutronOther);
+		int tNeutronSelf = coolant == null ? mNeutronSelf : coolant.getSelf(mNeutronSelf);
+		double tNeutronFactor = coolant == null ? 1.0 / mNeutronDiv : coolant.getFactor(mNeutronDiv);
 
-		aReactor.mNeutronCounts[aSlot] += tNeutronSelf;
-		double tEmission = tNeutronOther + Math.max(aReactor.oNeutronCounts[aSlot]-tNeutronSelf, 0) * tNeutronFactor;
+		aReactor.addNeutrons(aSlot, tNeutronSelf);
+		double tEmission = tNeutronOther + Math.max(aReactor.getNeutronCount(aSlot)-tNeutronSelf, 0) * tNeutronFactor;
 		return UT.Code.bindInt((long)Math.ceil(tEmission));
 	}
 	
 	@Override
 	// Gets called every Tick.
-	public boolean getReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		aReactor.mEnergy += aReactor.oNeutronCounts[aSlot];
+	public boolean performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
+		aReactor.addEnergy(aReactor.getNeutronCount(aSlot));
 		int tNeutronMax = getReactorRodNeutronMaximum(aReactor, aSlot, aStack);
 
-		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.inputTank.getFluid());
 		if (coolant != null && coolant.mModerates) {
 			mModerated = oModerated = T;
 		}
-		long tDurabilityLoss = aReactor.oNeutronCounts[aSlot] <= tNeutronMax ? 100 : UT.Code.divup(400L * aReactor.oNeutronCounts[aSlot], tNeutronMax);
+		long tDurabilityLoss = aReactor.getNeutronCount(aSlot) <= tNeutronMax ? 100 : UT.Code.divup(400L * aReactor.getNeutronCount(aSlot), tNeutronMax);
 		if (oModerated) tDurabilityLoss *= 4;
 		mDurability = tDurabilityLoss > mDurability ? -1 : mDurability - tDurabilityLoss;
 		UT.NBT.set(aStack, writeItemNBT(aStack.hasTagCompound() ? aStack.getTagCompound() : UT.NBT.make()));
@@ -140,18 +140,18 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 	
 	@Override
 	// Gets called every 20 Ticks.
-	public int getReactorRodNeutronReflection(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, int aNeutrons, boolean aModerated) {
+	public int emitToAndReflectFrom(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack, int aNeutrons, boolean aModerated) {
 		if (aModerated) {
 			mModerated = T;
 			UT.NBT.set(aStack, writeItemNBT(aStack.hasTagCompound() ? aStack.getTagCompound() : UT.NBT.make()));
 		}
-		aReactor.mNeutronCounts[aSlot] += aNeutrons;
+		aReactor.addNeutrons(aSlot, aNeutrons);
 		return 0;
 	}
 
 	@Override
 	public int getReactorRodNeutronMaximum(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.mTanks[0].getFluid());
+		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.inputTank.getFluid());
 		if (coolant == null) {
 			return mNeutronMax;
 		} else {
