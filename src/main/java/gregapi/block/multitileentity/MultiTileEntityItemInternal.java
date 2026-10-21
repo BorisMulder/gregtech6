@@ -453,6 +453,14 @@ public class MultiTileEntityItemInternal extends ItemBlock implements squeek.app
 	}
 
 	@Override
+	public boolean isTransparent(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
+		// Called for every step of every neutron beam, so ask the canonical tile entity instead of building a new one.
+		MultiTileEntityClassContainer tClassContainer = mBlock.mMultiTileEntityRegistry.getClassContainer(aStack);
+		if (tClassContainer != null && tClassContainer.mCanonicalTileEntity instanceof IItemReactorRod) return ((IItemReactorRod)tClassContainer.mCanonicalTileEntity).isTransparent(aReactor, aSlot, aStack);
+		return F;
+	}
+
+	@Override
 	public boolean isModerated(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
 		MultiTileEntityContainer tTileEntityContainer = mBlock.mMultiTileEntityRegistry.getNewTileEntityContainer(aStack);
 		if (tTileEntityContainer != null && tTileEntityContainer.mTileEntity instanceof IItemReactorRod) return ((IItemReactorRod)tTileEntityContainer.mTileEntity).isModerated(aReactor, aSlot, aStack);

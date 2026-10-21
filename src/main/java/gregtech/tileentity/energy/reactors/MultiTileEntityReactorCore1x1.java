@@ -21,7 +21,6 @@ package gregtech.tileentity.energy.reactors;
 
 import gregapi.old.Textures;
 import gregapi.render.*;
-import gregapi.tileentity.delegate.DelegatorTileEntity;
 import gregapi.util.UT;
 import net.minecraft.block.Block;
 
@@ -39,29 +38,19 @@ public class MultiTileEntityReactorCore1x1 extends MultiTileEntityReactorCore {
 		return 0;
 	}
 
-	@Override
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void updateAdjacentCores() {
-		DelegatorTileEntity<MultiTileEntityReactorCore>[] tAdjacents = new DelegatorTileEntity[4];
-		DelegatorTileEntity<MultiTileEntityReactorCore> tAdjacent;
-		DelegatorTileEntity
-		tAdjacentTE = getAdjacentTileEntity(SIDE_Z_NEG); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[0] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_Z_POS); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[1] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_X_NEG); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[2] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_X_POS); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[3] = tAdjacentTE;
+	@Override public int slotLength() {return 2;}
+	@Override public int slotOfEntry(byte aSide, int aSubSide) {return 0;}
+	@Override public int slotBehind(byte aSide, int aSlot) {return -1;}
 
-		int tNeutronCount = (int) UT.Code.divup(getReactorRodNeutronEmission(0), 2);
+	@Override
+	protected void updateAdjacentCores() {
+		// A 1x1 Reactor Core is one rod on a whole block, so it emits half strength at each of the two lateral sub-coordinates of every side.
+		int tNeutronCount = (int)UT.Code.divup(getReactorRodNeutronEmission(0), 2);
 		boolean tModerated = isReactorRodModerated(0);
-		if (tNeutronCount != 0 || tModerated) {
-			tAdjacent = tAdjacents[SIDE_Z_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_POS-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_POS-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_POS-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_POS-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-		}
+		if (tNeutronCount == 0 && !tModerated) return;
+		for (byte tSide : ALL_SIDES_HORIZONTAL)
+			for (int tSubSide = 0; tSubSide < 2; tSubSide++)
+				neutronCountsIn[0] += emitNeutronsFrom(tSide, 0, tSubSide, tNeutronCount, tModerated);
 	}
 
 	@Override

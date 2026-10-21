@@ -34,6 +34,7 @@ import gregapi.tileentity.ITileEntityFunnelAccessible;
 import gregapi.tileentity.ITileEntityServerTickPost;
 import gregapi.tileentity.ITileEntityTapAccessible;
 import gregapi.tileentity.base.TileEntityBase10FacingDouble;
+import gregapi.tileentity.delegate.DelegatorTileEntity;
 import gregapi.tileentity.machines.ITileEntityRunningActively;
 import gregapi.tileentity.machines.ITileEntitySwitchableOnOff;
 import gregapi.util.ST;
@@ -46,6 +47,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidHandler;
@@ -258,12 +260,15 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 		onUnregisterPost();
 	}
 	
-	public static final int[] S2103 = new int[] {0,0,2,1,0,3,0}, S0312 = new int[] {0,0,0,3,1,2,0};
-	
-	// 0 and 2 are at SIDE_Z_NEG    1 3      -->X+
-	// 1 and 3 are at SIDE_Z_POS  2|0 2|0   |0 2
-	// 0 and 1 are at SIDE_X_NEG  3|1 3|1   v1 3
-	// 2 and 3 are at SIDE_X_POS    0 2     Z+
+	/** Safety limit in half blocks for how far a neutron beam walks through transparent slots. Not a gameplay limit, just a guard against runaway walks. */
+	public static final int NEUTRON_RANGE = 256;
+
+	/** @return the length of one slot along the travel axis, in half blocks. */
+	public abstract int slotLength();
+	/** @return the slot a beam travelling towards aSide enters this core at, coming in at the lateral sub-coordinate aSubSide. */
+	public abstract int slotOfEntry(byte aSide, int aSubSide);
+	/** @return the next slot of this core behind aSlot when travelling towards aSide, or -1 if the beam leaves this core. */
+	public abstract int slotBehind(byte aSide, int aSlot);
 
 	public int addNeutrons(int aSlot, int aAmount) {
 		neutronCountsIn[slotIdx(aSlot)] += aAmount;
@@ -290,6 +295,14 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 			return (IItemReactorRod)item;
 		else
 			return null;
+	}
+
+	/** @return if neutrons travel straight through aSlot instead of interacting with it. Only an empty slot is transparent while switched off. */
+	public boolean slotIsTransparent(int aSlot) {
+		if (!slotHas(aSlot)) return T;                     // Nothing in there to stop the beam.
+		if (mStopped || (mMode & B[aSlot]) != 0) return F; // A switched off rod blocks the beam.
+		IItemReactorRod rod = getRodAt(aSlot);
+		return rod != null && rod.isTransparent(this, aSlot, slot(aSlot));
 	}
 
 	public boolean isReactorRodModerated(int aSlot) {
@@ -323,11 +336,32 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 		return F;
 	}
 	
-	public int emitNeutronsTo(int aSlot, int aNeutrons, boolean aModerated) {
-		int tSlot = slotIdx(aSlot);
-		IItemReactorRod rod = getRodAt(tSlot);
-		if (rod != null) return rod.emitToAndReflectFrom(this, aSlot, slot(tSlot), aNeutrons, aModerated);
-		return 0;
+	/** @return the adjacent Reactor Core on aSide, or null if there is no properly aligned one. */
+	public MultiTileEntityReactorCore getAdjacentCore(byte aSide) {
+		DelegatorTileEntity<TileEntity> tAdjacent = getAdjacentTileEntity(aSide);
+		return tAdjacent.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacent.mSideOfTileEntity] ? (MultiTileEntityReactorCore)tAdjacent.mTileEntity : null;
+	}
+	
+	/** Sends aNeutrons into aSlot of this core, travelling towards aSide. @return the reflected neutrons. */
+	protected int emitNeutronsAt(byte aSide, int aSlot, int aSubSide, int aNeutrons, boolean aModerated, int aRange) {
+		if (aRange <= 0) return 0;
+		if (slotIsTransparent(aSlot)) return emitNeutronsPast(aSide, aSlot, aSubSide, aNeutrons, aModerated, aRange - slotLength());
+		IItemReactorRod rod = getRodAt(aSlot);
+		if (rod == null) return 0; // A switched off rod, or an item that is not a rod, blocks the beam.
+		return rod.emitToAndReflectFrom(this, aSlot, slot(aSlot), aNeutrons, aModerated);
+	}
+	
+	/** Continues a beam behind aSlot towards aSide, into the next slot of this core or into the adjacent core. @return the reflected neutrons. */
+	protected int emitNeutronsPast(byte aSide, int aSlot, int aSubSide, int aNeutrons, boolean aModerated, int aRange) {
+		int tSlot = slotBehind(aSide, aSlot);
+		if (tSlot >= 0) return emitNeutronsAt(aSide, tSlot, aSubSide, aNeutrons, aModerated, aRange);
+		MultiTileEntityReactorCore tCore = getAdjacentCore(aSide);
+		return tCore == null ? 0 : tCore.emitNeutronsAt(aSide, tCore.slotOfEntry(aSide, aSubSide), aSubSide, aNeutrons, aModerated, aRange);
+	}
+
+	/** Emits aNeutrons from aSlot of this core towards aSide, at the lateral sub-coordinate aSubSide. @return the reflected neutrons. */
+	public int emitNeutronsFrom(byte aSide, int aSlot, int aSubSide, int aNeutrons, boolean aModerated) {
+		return emitNeutronsPast(aSide, aSlot, aSubSide, aNeutrons, aModerated, NEUTRON_RANGE);
 	}
 	
 	@Override

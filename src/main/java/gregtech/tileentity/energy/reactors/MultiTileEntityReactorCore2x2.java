@@ -21,7 +21,6 @@ package gregtech.tileentity.energy.reactors;
 
 import gregapi.old.Textures;
 import gregapi.render.*;
-import gregapi.tileentity.delegate.DelegatorTileEntity;
 import gregapi.tileentity.machines.ITileEntitySwitchableMode;
 import net.minecraft.block.Block;
 
@@ -42,52 +41,53 @@ public class MultiTileEntityReactorCore2x2 extends MultiTileEntityReactorCore im
 		return slot;
 	}
 
+	@Override public int slotLength() {return 1;}
+
+	// Slot layout, every slot is an X and a Z coordinate that are each 0 or 1, as slot = X * 2 + Z.
+	// 0 and 2 are at SIDE_Z_NEG    1 3      -->X+
+	// 1 and 3 are at SIDE_Z_POS  2|0 2|0   |0 2
+	// 0 and 1 are at SIDE_X_NEG  3|1 3|1   v1 3
+	// 2 and 3 are at SIDE_X_POS    0 2     Z+
+	// Subside layout: a beam travels along one axis and keeps its coordinate on the other one, which is its subside.
+	// Travelling along Z, the subside is the X coordinate: subside 0 is slots 0 and 1, subside 1 is slots 2 and 3.
+	// Travelling along X, the subside is the Z coordinate: subside 0 is slots 0 and 2, subside 1 is slots 1 and 3.
+
+	private static int slotAt(int aX, int aZ) {return aX * 2 + aZ;}
+	private static int xOf(int aSlot) {return aSlot / 2;}
+	private static int zOf(int aSlot) {return aSlot % 2;}
+
+	/** @return the coordinate along the travel axis where a beam heading towards aSide enters this core, which is the end it heads away from. */
+	private static int entryCoordinate(byte aSide) {return aSide == SIDE_Z_POS || aSide == SIDE_X_POS ? 0 : 1;}
+	/** @return the coordinate along the travel axis where a beam heading towards aSide leaves this core. */
+	private static int exitCoordinate(byte aSide) {return 1 - entryCoordinate(aSide);}
+
 	@Override
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public int slotOfEntry(byte aSide, int aSubSide) {
+		// The beam enters at one end of its travel axis, and the subside tells us where it sits on the other axis.
+		return SIDES_AXIS_Z[aSide] ? slotAt(aSubSide, entryCoordinate(aSide)) : slotAt(entryCoordinate(aSide), aSubSide);
+	}
+
+	@Override
+	public int slotBehind(byte aSide, int aSlot) {
+		boolean tAlongZ = SIDES_AXIS_Z[aSide];
+		// Once the beam has reached the far end of its travel axis, there is no slot of this core left behind it.
+		if ((tAlongZ ? zOf(aSlot) : xOf(aSlot)) == exitCoordinate(aSide)) return -1;
+		// Otherwise it moves to the far end, keeping its coordinate on the other axis.
+		return tAlongZ ? slotAt(xOf(aSlot), exitCoordinate(aSide)) : slotAt(exitCoordinate(aSide), zOf(aSlot));
+	}
+
+	/** @return the subside of aSlot as seen by a beam travelling towards aSide. */
+	private static int subSideOf(byte aSide, int aSlot) {return SIDES_AXIS_Z[aSide] ? xOf(aSlot) : zOf(aSlot);}
+
+	@Override
 	protected void updateAdjacentCores() {
-		DelegatorTileEntity<MultiTileEntityReactorCore>[] tAdjacents = new DelegatorTileEntity[4];
-		DelegatorTileEntity<MultiTileEntityReactorCore> tAdjacent;
-		DelegatorTileEntity
-		tAdjacentTE = getAdjacentTileEntity(SIDE_Z_NEG); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[0] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_Z_POS); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[1] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_X_NEG); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[2] = tAdjacentTE;
-		tAdjacentTE = getAdjacentTileEntity(SIDE_X_POS); if (tAdjacentTE.mTileEntity instanceof MultiTileEntityReactorCore && SIDES_HORIZONTAL[tAdjacentTE.mSideOfTileEntity]) tAdjacents[3] = tAdjacentTE;
-
-		// Get amount of neutrons emitted from each adjacent rod, and send them to its neighbours, one by one.
-		int tNeutronCount = getReactorRodNeutronEmission(0);
-		boolean tModerated = isReactorRodModerated(0);
-		if (tNeutronCount != 0 || tModerated) {
-			neutronCountsIn[0] += emitNeutronsTo(1, tNeutronCount, tModerated);
-			neutronCountsIn[0] += emitNeutronsTo(2, tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_NEG-2]; if (tAdjacent != null) neutronCountsIn[0] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-		}
-
-		tNeutronCount = getReactorRodNeutronEmission(1);
-		tModerated = isReactorRodModerated(1);
-		if (tNeutronCount != 0 || tModerated) {
-			neutronCountsIn[1] += emitNeutronsTo(0, tNeutronCount, tModerated);
-			neutronCountsIn[1] += emitNeutronsTo(3, tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_POS-2]; if (tAdjacent != null) neutronCountsIn[1] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_NEG-2]; if (tAdjacent != null) neutronCountsIn[1] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-		}
-
-		tNeutronCount = getReactorRodNeutronEmission(2);
-		tModerated = isReactorRodModerated(2);
-		if (tNeutronCount != 0 || tModerated) {
-			neutronCountsIn[2] += emitNeutronsTo(0, tNeutronCount, tModerated);
-			neutronCountsIn[2] += emitNeutronsTo(3, tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_NEG-2]; if (tAdjacent != null) neutronCountsIn[2] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_POS-2]; if (tAdjacent != null) neutronCountsIn[2] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-		}
-
-		tNeutronCount = getReactorRodNeutronEmission(3);
-		tModerated = isReactorRodModerated(3);
-		if (tNeutronCount != 0 || tModerated) {
-			neutronCountsIn[3] += emitNeutronsTo(1, tNeutronCount, tModerated);
-			neutronCountsIn[3] += emitNeutronsTo(2, tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_Z_POS-2]; if (tAdjacent != null) neutronCountsIn[3] += tAdjacent.mTileEntity.emitNeutronsTo(S2103[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
-			tAdjacent = tAdjacents[SIDE_X_POS-2]; if (tAdjacent != null) neutronCountsIn[3] += tAdjacent.mTileEntity.emitNeutronsTo(S0312[tAdjacent.mSideOfTileEntity], tNeutronCount, tModerated);
+		// Get amount of neutrons emitted from each rod, and send them to its neighbours, one by one.
+		for (int tSlot = 0; tSlot < numSlots(); tSlot++) {
+			int tNeutronCount = getReactorRodNeutronEmission(tSlot);
+			boolean tModerated = isReactorRodModerated(tSlot);
+			if (tNeutronCount == 0 && !tModerated) continue;
+			for (byte tSide : ALL_SIDES_HORIZONTAL)
+				neutronCountsIn[tSlot] += emitNeutronsFrom(tSide, tSlot, subSideOf(tSide, tSlot), tNeutronCount, tModerated);
 		}
 	}
 
