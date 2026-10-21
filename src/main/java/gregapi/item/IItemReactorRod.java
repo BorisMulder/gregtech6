@@ -29,6 +29,8 @@ import net.minecraft.item.ItemStack;
 public interface IItemReactorRod {
 	/** @return if a Reactor would accept this Item as a Part of it. */
 	public boolean  isReactorRod(ItemStack aStack);
+	/** @return if neutrons travel straight through this rod to the next rod in line, instead of interacting with it. */
+	public boolean  isTransparent(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack);
 	/** @return is a Reactor Rod is moderated and thus isn't usable for breeding */
 	public boolean  isModerated (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack);
 	/** Updates the moderation status of the reactor rod */

@@ -23,7 +23,6 @@ import gregapi.block.multitileentity.IMultiTileEntity.IMTE_AddToolTips;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetCollisionBoundingBoxFromPool;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetSelectedBoundingBoxFromPool;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_SetBlockBoundsBasedOnState;
-import gregapi.data.LH;
 import gregapi.data.MT;
 import gregapi.item.IItemReactorRod;
 import gregapi.old.Textures;
@@ -37,8 +36,6 @@ import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 
-import java.util.List;
-
 import static gregapi.data.CS.*;
 
 /**
@@ -50,10 +47,10 @@ public abstract class MultiTileEntityReactorRodBase extends TileEntityBase07Pain
 		return SIDES_HORIZONTAL[aSide] ? getReactorRodTextureSides(null, 0, null, T) : getReactorRodTextureTop(null, 0, null, T);
 	}
 
-	public static IIconContainer sColoreds[] = new IIconContainer[] {
+	public static IIconContainer[] sColoreds = new IIconContainer[] {
 		new Textures.BlockIcons.CustomIcon("machines/generators/reactor_rods/colored/top"),
 		new Textures.BlockIcons.CustomIcon("machines/generators/reactor_rods/colored/sides")
-	}, sOverlays[] = new IIconContainer[] {
+	}, sOverlays = new IIconContainer[] {
 		new Textures.BlockIcons.CustomIcon("machines/generators/reactor_rods/overlay/top"),
 		new Textures.BlockIcons.CustomIcon("machines/generators/reactor_rods/overlay/sides")
 	};
@@ -76,6 +73,7 @@ public abstract class MultiTileEntityReactorRodBase extends TileEntityBase07Pain
 	@Override public boolean isObstructingBlockAt   (byte aSide) {return F;}
 
 	@Override public boolean  isReactorRod(ItemStack aStack) {return T;}
+	@Override public boolean  isTransparent(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return F;}
 	@Override public boolean  isModerated(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return false;}
 	@Override public void     updateModeration(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {/**/}
 	@Override public int      getReactorRodNeutronEmission  (MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {return 0;}
