@@ -76,7 +76,7 @@ public class MultiTileEntityReactorRodBreeder extends MultiTileEntityReactorRodB
 	@Override
 	public boolean performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
 		int neutrons = aReactor.getNeutronCount(aSlot);
-		aReactor.addEnergy(neutrons / 2);
+		aReactor.addHeat(neutrons / 2);
 		mDurability -= neutrons;
 		if (mDurability <= 0) {
 			ST.meta(aStack, mProduct);

@@ -38,7 +38,7 @@ public class MultiTileEntityReactorRodAbsorber extends MultiTileEntityReactorRod
 
 	@Override
 	public boolean performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		aReactor.addEnergy(aReactor.getNeutronCount(aSlot) * 2L);
+		aReactor.addHeat(aReactor.getNeutronCount(aSlot) * 2L);
 		return T;
 	}
 	

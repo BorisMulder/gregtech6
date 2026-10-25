@@ -7,9 +7,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ReactorCoolant {
-	public static ArrayList<ReactorCoolant> COOLANTS = new ArrayList<>();
+	protected static final ArrayList<ReactorCoolant> COOLANTS = new ArrayList<>();
 	/// Looked up several times per rod per tick, so keyed by Fluid instead of scanning COOLANTS.
-	private static final HashMap<Fluid, ReactorCoolant> COOLANTS_BY_FLUID = new HashMap<>();
+	protected static final HashMap<Fluid, ReactorCoolant> COOLANTS_BY_FLUID = new HashMap<>();
 
 	public FluidStack mCoolant, mHeatant;
 
@@ -47,6 +47,10 @@ public class ReactorCoolant {
 		return aFluid == null ? null : COOLANTS_BY_FLUID.get(aFluid.getFluid());
 	}
 
+	public static ReactorCoolant getCoolantAtIdx(long idx) {
+		return COOLANTS.get((int)(idx % ReactorCoolant.COOLANTS.size()));
+	}
+
 	public static boolean isCoolant(FluidStack aFluid) {
 		return getCoolant(aFluid) != null;
 	}
@@ -64,6 +68,12 @@ public class ReactorCoolant {
 		return (int) Math.ceil((double)base * this.mMaxMultiplier);
 	}
 
+	/**
+	 * Modify the neutron factor based on this coolant's factor multiplier.
+	 * @param base the base emission factor of the fuel rod.
+	 * If the factor multiplier is negative, it is subtracted from the divisor instead, as is the case with e.g. liquid Na/Sn
+	 * @return the modified emission factor
+	 */
 	public double getFactor(int base) {
 		if (this.mFactorMultiplier < 0) {
 			return (1 / ((double)base + this.mFactorMultiplier));
@@ -71,7 +81,12 @@ public class ReactorCoolant {
 		return (1 / (double)base) * this.mFactorMultiplier;
 	}
 
-	public long getHeat(long base) {
+	/**
+	 * Divide the heat by this coolant's heat factor
+	 * @param base the input heat
+	 * @return the heat left after division
+	 */
+	public long divideGeneratedHeat(long base) {
 		if (this.mHeatDivisor == 1.0) return base; // to prevent rounding errors
 		return (long) Math.ceil((double)base / this.mHeatDivisor);
 	}

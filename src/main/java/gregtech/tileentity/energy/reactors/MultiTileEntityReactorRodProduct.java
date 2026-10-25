@@ -52,7 +52,7 @@ public class MultiTileEntityReactorRodProduct extends MultiTileEntityReactorRodB
 
 	@Override
 	public boolean performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		aReactor.addEnergy(aReactor.getNeutronCount(aSlot) / 2);
+		aReactor.addHeat(aReactor.getNeutronCount(aSlot) / 2);
 		return T;
 	}
 

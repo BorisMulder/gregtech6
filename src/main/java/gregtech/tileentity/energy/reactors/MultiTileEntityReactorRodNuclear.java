@@ -81,9 +81,7 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 		if (mModerated || oModerated) aList.add(LH.Chat.DBLUE + "This Fuel is " + LH.Chat.WHITE + "Moderated");
 		aList.add(LH.Chat.CYAN + "Remaining: " + LH.Chat.WHITE + (mDurability / 120000) + LH.Chat.CYAN + " Minutes");
 
-		int idx = (int) ((CLIENT_TIME / 100) % ReactorCoolant.COOLANTS.size());
-		ReactorCoolant coolant = ReactorCoolant.COOLANTS.get(idx);
-
+		ReactorCoolant coolant = ReactorCoolant.getCoolantAtIdx(CLIENT_TIME / 100);
 		aList.add(LH.Chat.CYAN + "When used with " + coolant.mCoolant.getLocalizedName() + ": ");
 		aList.add(LH.Chat.GREEN + "Emission: " + LH.Chat.WHITE + coolant.getEmission(mNeutronOther) + LH.Chat.PURPLE + " Neutrons/t");
 		aList.add(LH.Chat.GREEN + "Self: " + LH.Chat.WHITE + coolant.getSelf(mNeutronSelf) + LH.Chat.PURPLE + " Neutrons/t");
@@ -118,7 +116,7 @@ public class MultiTileEntityReactorRodNuclear extends MultiTileEntityReactorRodB
 	@Override
 	// Gets called every Tick.
 	public boolean performReactorRodNeutronReaction(MultiTileEntityReactorCore aReactor, int aSlot, ItemStack aStack) {
-		aReactor.addEnergy(aReactor.getNeutronCount(aSlot));
+		aReactor.addHeat(aReactor.getNeutronCount(aSlot));
 		int tNeutronMax = getReactorRodNeutronMaximum(aReactor, aSlot, aStack);
 
 		ReactorCoolant coolant = ReactorCoolant.getCoolant(aReactor.inputTank.getFluid());

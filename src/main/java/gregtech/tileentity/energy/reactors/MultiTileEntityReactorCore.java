@@ -67,8 +67,8 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 	protected int[] neutronCountsIn;
 	/// Number of neutrons that are to be transmitted for each slot.
 	protected int[] neutronCountsOut;
-	/// Energy internal to the Reactor Core. Neutrons are converted into energy by reactor rods.
-	protected long storedEnergy = 0;
+	/// Heat internal to the Reactor Core. Neutrons are converted into heat by reactor rods.
+	protected long storedHeat = 0;
 	/// Heat (HU) produced in the last tick, as shown by the Thermometer.
 	protected long heatProduced = 0;
 
@@ -91,7 +91,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 	public void readFromNBT2(NBTTagCompound aNBT) {
 		super.readFromNBT2(aNBT);
 		mMode = aNBT.getByte(NBT_MODE);
-		storedEnergy = aNBT.getLong(NBT_ENERGY);
+		storedHeat = aNBT.getLong(NBT_ENERGY);
 		mRunning = aNBT.getBoolean(NBT_ACTIVE);
 		mStopped = aNBT.getBoolean(NBT_STOPPED);
 		inputTank.readFromNBT(aNBT, NBT_TANK+".0");
@@ -112,7 +112,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 	public void writeToNBT2(NBTTagCompound aNBT) {
 		super.writeToNBT2(aNBT);
 		UT.NBT.setNumber(aNBT, NBT_MODE, mMode);
-		UT.NBT.setNumber(aNBT, NBT_ENERGY, storedEnergy);
+		UT.NBT.setNumber(aNBT, NBT_ENERGY, storedHeat);
 		UT.NBT.setBoolean(aNBT, NBT_ACTIVE, mRunning);
 		UT.NBT.setBoolean(aNBT, NBT_STOPPED, mStopped);
 		inputTank.writeToNBT(aNBT, NBT_TANK+".0");
@@ -204,25 +204,26 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 
 			mRunning = (tRadiation != 0);
 
-			long oEnergy = storedEnergy;
+			long oldHeat = storedHeat;
 			for (int i = 0; i < numSlots(); i++) {
+				// In here, the neutrons may actually be converted to heat, mutating storedHeat.
 				if (performReactorRodNeutronReaction(i)) {
 					mRunning = T;
 				}
 			}
 
 			ReactorCoolant coolant = ReactorCoolant.getCoolant(inputTank.getFluid());
-			// Some coolants generate less heat per neutron. Only this tick's energy is divided, the remainder already is heat.
-			if (coolant != null) storedEnergy = coolant.getHeat(storedEnergy - oEnergy) + oEnergy;
-			heatProduced = storedEnergy - oEnergy;
+			// Some coolants generate less heat per neutron. Only this tick's heat is divided; the remainder amount already is converted by the coolant.
+			if (coolant != null) storedHeat = coolant.divideGeneratedHeat(storedHeat - oldHeat) + oldHeat;
+			heatProduced = storedHeat - oldHeat;
 
-			if (storedEnergy > 0) { // Convert heat (HU) to hot coolant.
+			if (storedHeat > 0) { // Convert heat (HU) to hot coolant.
 				boolean tExploding = F;
 				if (coolant != null) {
-					long litersNeeded = storedEnergy / coolant.mHUPerLiter; // div down here. The remainder should stay as storedEnergy.
+					long litersNeeded = storedHeat / coolant.mHUPerLiter; // div down here. The remainder should stay as storedHeat.
 					if (inputTank.has(litersNeeded) && outputTank.fillAll(FL.mul(coolant.mHeatant, litersNeeded))) {
 						inputTank.remove(litersNeeded);
-						storedEnergy -= litersNeeded * coolant.mHUPerLiter;
+						storedHeat -= litersNeeded * coolant.mHUPerLiter;
 					} else {
 						tExploding = T;
 					}
@@ -242,7 +243,7 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 			slotKill(i);
 		}
 		UT.Sounds.send(SFX.MC_EXPLODE, this, F);
-		storedEnergy = 0;
+		storedHeat = 0;
 		for (Object tEntity : worldObj.loadedEntityList) if (tEntity instanceof EntityLivingBase) {
 			if (Math.abs(xCoord - ((EntityLivingBase)tEntity).posX) > 500) continue;
 			if (Math.abs(zCoord - ((EntityLivingBase)tEntity).posZ) > 500) continue;
@@ -279,8 +280,8 @@ public abstract class MultiTileEntityReactorCore extends TileEntityBase10FacingD
 		return neutronCountsOut[slotIdx(aSlot)];
 	}
 
-	public void addEnergy(long aAmount) {
-		storedEnergy += aAmount;
+	public void addHeat(long aAmount) {
+		storedHeat += aAmount;
 	}
 
 	public IItemReactorRod getRodAt(int aSlot) {
